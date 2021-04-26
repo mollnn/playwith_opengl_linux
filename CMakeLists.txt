@@ -19,4 +19,6 @@ target_link_libraries(${PROJECT_NAME}
     -lXinerama
     -lXcursor
     -lGL -lglut -lGLU
+    -lGLEW
+    -g
     )
