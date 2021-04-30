@@ -4,13 +4,13 @@ set(CMAKE_CXX_STANDARD 14)
 project(learn_gl)
 
 include_directories(include)
-
-
 find_package(glfw3 REQUIRED)
-file(GLOB project_01_triangle src/glad.c src/01_triangle/01_triangle.cpp)
-add_executable(01_triangle ${project_01_triangle})
-file(GLOB project_02_shader src/glad.c src/02_shader/02_shader.cpp)
-add_executable(02_shader ${project_02_shader})
 
-target_link_libraries(01_triangle -lglfw3 -lGL -lm -lXrandr -lXi -lX11 -lXxf86vm -lpthread -ldl -lXinerama -lXcursor -lGL -lglut -lGLU -lGLEW -g)
-target_link_libraries(02_shader -lglfw3 -lGL -lm -lXrandr -lXi -lX11 -lXxf86vm -lpthread -ldl -lXinerama -lXcursor -lGL -lglut -lGLU -lGLEW -g)
+macro(MY_ADD_EXECUTABLE PROGRAM)
+    add_executable(${PROGRAM} src/${PROGRAM}/${PROGRAM}.cpp)
+    target_link_libraries(${PROGRAM} -lglfw3 -lGL -lm -lXrandr -lXi -lX11 -lXxf86vm -lpthread -ldl -lXinerama -lXcursor -lGL -lglut -lGLU -lGLEW -g -lSOIL)
+endmacro()
+
+MY_ADD_EXECUTABLE(01_triangle)
+MY_ADD_EXECUTABLE(02_shader)
+MY_ADD_EXECUTABLE(03_texture)
