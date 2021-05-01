@@ -1,4 +1,4 @@
 build/*
 build
-include/*
-include/
+include/glm/
+include/SOIL.h
