@@ -1,8 +1,11 @@
 #include <iostream>
+#include <cstdio>
 #define GLEW_STATIC
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <SOIL.h>
+#include <GL/glext.h>
+#include <GL/glxew.h>
 #include "Shader.h"
 void key_callback(GLFWwindow *window, int key, int scancode, int action, int mode);
 const GLuint WIDTH = 1600, HEIGHT = 900;
@@ -32,6 +35,37 @@ int main()
     glewExperimental = GL_TRUE;
     glewInit();
     glViewport(0, 0, WIDTH, HEIGHT);
+
+    {
+        Display *dpy = glXGetCurrentDisplay();
+        GLXDrawable drawable = glXGetCurrentDrawable();
+        const int interval = 0;
+
+        if (drawable)
+        {
+            glXSwapIntervalEXT(dpy, drawable, interval);
+        }
+        else
+        {
+            std::cerr << "cannot find drawable" << std::endl;
+        }
+    }
+
+    {
+        Display *dpy = glXGetCurrentDisplay();
+        GLXDrawable drawable = glXGetCurrentDrawable();
+        unsigned int swap, maxSwap;
+
+        if (drawable)
+        {
+            glXQueryDrawable(dpy, drawable, GLX_SWAP_INTERVAL_EXT, &swap);
+            glXQueryDrawable(dpy, drawable, GLX_MAX_SWAP_INTERVAL_EXT,
+                             &maxSwap);
+            printf("The swap interval is %u and the max swap interval is "
+                   "%u\n",
+                   swap, maxSwap);
+        }
+    }
 
     Shader ourShader("../src/12_texturebuffer/textures.vs", "../src/12_texturebuffer/textures.frag");
 
@@ -149,7 +183,7 @@ int main()
 
         int w0 = 2;
 
-        for (int i = 1; i <= 5; i++)
+        for (int i = 1; i <= 1; i++)
         {
             CopyFromFramebufferToTexture(fboResult, textureLast, 0, 0, 0, 0, width, height);
             CopyFromFramebufferToTexture(fboLast, textureResult, 0, 0, w0 - 1, 0, width - w0 + 1, height);
