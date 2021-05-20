@@ -1,5 +1,4 @@
-#include <iostream>
-#include <cstdio>
+#include <bits/stdc++.h>
 #define GLEW_STATIC
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
@@ -7,65 +6,72 @@
 #include <GL/glext.h>
 #include <GL/glxew.h>
 #include "Shader.h"
+
+// @brief   Time syscalls in Linux
+#include <sys/time.h>
+int64_t time0=0;
+
+// @brief   Get current system time in us
+int64_t GetCurrentTime()
+{
+    struct timeval time;
+    gettimeofday(&time,NULL);
+    return (time.tv_sec * 1000000 + time.tv_usec);
+}
+
+// @brief   Get duration between two time (us)
+double GetTimeDuration(int64_t startusec, int64_t endusec)
+{
+    return (double)(endusec - startusec)/1000000.0;
+}
+
+// @brief   OpenGL event handler
 void key_callback(GLFWwindow *window, int key, int scancode, int action, int mode);
+
 const GLuint WIDTH = 1600, HEIGHT = 900;
 
+// @brief   OWrapped FBO->Texture Copy
 void CopyFromFramebufferToTexture(GLuint fboSrc, GLuint texDest, int xo, int yo, int x, int y, int w, int h)
 {
     glBindFramebuffer(GL_FRAMEBUFFER, fboSrc);
-
     glBindTexture(GL_TEXTURE_2D, texDest);
-
     glCopyTexSubImage2D(GL_TEXTURE_2D, 0, xo, yo, x, y, w, h);
-
     glBindTexture(GL_TEXTURE_2D, 0);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
+// @brief   Enable VSync
+void VSync()
+{
+    Display *dpy = glXGetCurrentDisplay();
+    GLXDrawable drawable = glXGetCurrentDrawable();
+    const int interval = 0;
+    if (drawable)
+    {
+        glXSwapIntervalEXT(dpy, drawable, interval);
+    }
+    else
+    {
+        std::cerr << "cannot find drawable" << std::endl;
+    }
+}
+
 int main()
 {
+    // glfw init
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
-    GLFWwindow *window = glfwCreateWindow(WIDTH, HEIGHT, "LearnOpenGL", nullptr, nullptr);
+    GLFWwindow *window = glfwCreateWindow(WIDTH, HEIGHT, "Vsync Test", nullptr, nullptr);
     glfwMakeContextCurrent(window);
     glfwSetKeyCallback(window, key_callback);
     glewExperimental = GL_TRUE;
     glewInit();
     glViewport(0, 0, WIDTH, HEIGHT);
 
-    {
-        Display *dpy = glXGetCurrentDisplay();
-        GLXDrawable drawable = glXGetCurrentDrawable();
-        const int interval = 0;
-
-        if (drawable)
-        {
-            glXSwapIntervalEXT(dpy, drawable, interval);
-        }
-        else
-        {
-            std::cerr << "cannot find drawable" << std::endl;
-        }
-    }
-
-    {
-        Display *dpy = glXGetCurrentDisplay();
-        GLXDrawable drawable = glXGetCurrentDrawable();
-        unsigned int swap, maxSwap;
-
-        if (drawable)
-        {
-            glXQueryDrawable(dpy, drawable, GLX_SWAP_INTERVAL_EXT, &swap);
-            glXQueryDrawable(dpy, drawable, GLX_MAX_SWAP_INTERVAL_EXT,
-                             &maxSwap);
-            printf("The swap interval is %u and the max swap interval is "
-                   "%u\n",
-                   swap, maxSwap);
-        }
-    }
+    VSync();
 
     Shader ourShader("../src/12_texturebuffer/textures.vs", "../src/12_texturebuffer/textures.frag");
 
@@ -173,22 +179,18 @@ int main()
 
     int cnt = 0;
 
+    int64_t last_update_time;
+
+    time0=GetCurrentTime();
+
     while (!glfwWindowShouldClose(window))
     {
         ++cnt;
+        int w0 = 1;
 
-        // ----------------------------------------------------------
-        // create a new frame buffer and do some stupid image copy
-        // ----------------------------------------------------------
-
-        int w0 = 2;
-
-        for (int i = 1; i <= 1; i++)
-        {
-            CopyFromFramebufferToTexture(fboResult, textureLast, 0, 0, 0, 0, width, height);
-            CopyFromFramebufferToTexture(fboLast, textureResult, 0, 0, w0 - 1, 0, width - w0 + 1, height);
-            CopyFromFramebufferToTexture(cnt % 2 ? fboSource : fboEmpty, textureResult, width - w0, 0, 0, 0, w0, height);
-        }
+        CopyFromFramebufferToTexture(fboResult, textureLast, 0, 0, 0, 0, width, height);
+        CopyFromFramebufferToTexture(fboLast, textureResult, 0, 0, w0, 0, width - w0, height);
+        CopyFromFramebufferToTexture(cnt % 2 ? fboSource : fboEmpty, textureResult, width - w0, 0, 0, 0, w0, height);
 
         glfwPollEvents();
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
@@ -203,6 +205,11 @@ int main()
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
         glfwSwapBuffers(window);
+
+        std::cout<<"Frame "<<cnt<<"\t";
+        std::cout<<"Time "<<std::fixed<<std::setprecision(3)<<GetTimeDuration(time0,GetCurrentTime())<<"\t";
+        std::cout<<"Delta "<<GetTimeDuration(last_update_time,GetCurrentTime())<<std::endl;
+        last_update_time=GetCurrentTime();
     }
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
